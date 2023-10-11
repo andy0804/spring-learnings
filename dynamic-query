@@ -28,40 +28,31 @@ public class GatewayConfig {
             .build();
     }
 
-    private GatewayFilter dynamicallyAddQueryParameters() {
+     private GatewayFilter dynamicallyAddQueryParameters() {
         return (exchange, chain) -> {
             // Extract query parameters from the incoming request
             String name = exchange.getRequest().getQueryParams().getFirst("name");
             String otherParam = exchange.getRequest().getQueryParams().getFirst("otherParam");
 
             // Build the new query string dynamically
-            StringBuilder newQuery = new StringBuilder();
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUri(exchange.getRequest().getURI());
+
             if (name != null) {
-                newQuery.append("name=").append(name);
+                uriBuilder.queryParam("name", name);
             }
             if (otherParam != null) {
-                if (newQuery.length() > 0) {
-                    newQuery.append("&");
-                }
-                newQuery.append("otherParam=").append(otherParam);
-            }
-
-            // Get the existing query string
-            String existingQuery = exchange.getRequest().getURI().getRawQuery();
-
-            // Combine the new and existing query strings
-            if (existingQuery != null && newQuery.length() > 0) {
-                newQuery.insert(0, existingQuery + "&");
+                uriBuilder.queryParam("otherParam", otherParam);
             }
 
             // Update the request URI with the new query string
             ServerWebExchange mutatedExchange = exchange.mutate()
-                    .request(exchange.getRequest().mutate()
-                            .uri(uriBuilder -> uriBuilder.replaceQuery(newQuery.toString()))
-                            .build())
-                    .build();
+                .request(exchange.getRequest().mutate()
+                    .uri(uriBuilder.build().toUri())
+                    .build())
+                .build();
 
             return chain.filter(mutatedExchange);
         };
+    }
     }
 }
