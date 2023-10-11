@@ -14,6 +14,25 @@ public class GatewayConfig {
     @Value("${math-service-url}") // Configure this in your application.properties
     private String mathServiceUrl;
 
+   private GatewayFilter appendQueryParameters() {
+    return (exchange, chain) -> {
+        // Get the original URI as a string
+        String originalUri = exchange.getRequest().getURI().toString();
+        
+        // Check for query parameters
+        String queryString = exchange.getRequest().getURI().getRawQuery();
+        if (queryString != null && !queryString.isEmpty()) {
+            // Append query parameters to the URI
+            String updatedUri = originalUri + "?" + queryString;
+            
+            // Create a new ServerHttpRequest with the modified URI
+            exchange.getAttributes().put("exchange.request.uri", updatedUri);
+        }
+        
+        // Continue with the request chain
+        return chain.filter(exchange);
+    };
+}
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder, RewritePathGatewayFilterFactory rewritePath) {
         return builder.routes()
