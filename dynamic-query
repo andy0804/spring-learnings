@@ -27,6 +27,30 @@ public class GatewayConfig {
                 .uri(mathServiceUrl))
             .build();
     }
+public RouteLocator customRouteLocator(RouteLocatorBuilder builder, AppConfig appConfig) {
+    return builder.routes()
+        .route("my-path-route", r -> r
+            .path("/fc/raptor")
+            .filters(f -> f
+                .addRequestHeader(ORIGIN, appConfig.get(FC.URL))
+                .rewritePath("/fc/raptor", "/raptor")
+                .modifyResponseBody(String.class, String.class,
+                    (exchange, response) -> {
+                        // Append query parameters to the URI if they exist
+                        ServerHttpRequest request = exchange.getRequest();
+                        String queryString = request.getURI().getRawQuery();
+                        if (queryString != null && !queryString.isEmpty()) {
+                            return response + "?" + queryString;
+                        } else {
+                            return response;
+                        }
+                    })
+            )
+            .uri(appConfig.get(FC.URL))
+        )
+        .build();
+}
+
 
      private GatewayFilter dynamicallyAddQueryParameters() {
         return (exchange, chain) -> {
